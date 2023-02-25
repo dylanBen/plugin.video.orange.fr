@@ -7,7 +7,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from lib.providers.provider_interface import ProviderInterface
+from lib.providers import ProviderInterface
 from lib.utils import get_drm, get_global_setting, log, LogLevel, random_ua
 
 @dataclass
@@ -75,11 +75,14 @@ class OrangeTemplate(ProviderInterface):
 
         for channel in channels:
             channel_id: str = channel['id']
+            logo = channel['logos']['square'] if 'square' in channel['logos'] else None
+            marker = logo.find('%2F')
+            channel_logo = logo[:marker]+logo[marker+3:].replace('/','%2F')
             streams.append({
                 'id': channel_id,
                 'name': channel['name'],
                 'preset': channel['zappingNumber'],
-                'logo': channel['logos']['square'] if 'square' in channel['logos'] else None,
+                'logo': channel_logo,
                 'stream': f'plugin://plugin.video.orange.fr/channel/{channel_id}',
                 'group': [group_name for group_name in self.groups if int(channel['id']) in self.groups[group_name]]
             })
@@ -142,6 +145,7 @@ class OrangeTemplate(ProviderInterface):
 
         return epg
 
+    # pylint: disable=no-self-use
     def _get_programs(self, period_start: int = None, period_end: int = None) -> list:
         """Returns the programs for today (default) or the specified period"""
         try:
